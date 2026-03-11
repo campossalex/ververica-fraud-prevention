@@ -5,7 +5,7 @@ resource "random_string" "sg_suffix" {
 }
 
 # Security group to access to all post
-resource "aws_security_group" "labday_sgn" {
+resource "aws_security_group" "fraud-prevention_sgn" {
   name        = "labday_sgn-${random_string.sg_suffix.result}"
 
   ingress {
@@ -145,7 +145,7 @@ resource "aws_instance" "labday" {
   EOF
 
   tags = {
-    Name = "labday-instance-${count.index}"
+    Name = "fraud-prevention-instance-${count.index}"
     owner = var.owner
   }
 
