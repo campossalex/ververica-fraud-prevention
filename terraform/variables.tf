@@ -20,7 +20,7 @@ variable "instance_ami" {
 
 # EC2 instance type
 variable "instance_type" {
-  default = "c6a.2xlarge"
+  default = "c5a.4xlarge"
 }
   
 # Your EC2 key pair name (must already exist in AWS)
@@ -29,7 +29,7 @@ variable "key_name" {
   
 # Your Git repo and script name
 variable "git_repo" {   
-  default = "https://github.com/campossalex/apacheflink-labday-1.git"
+  default = "https://github.com/campossalex/ververica-fraud-prevention.git"
 }
 
 # Owner tag
