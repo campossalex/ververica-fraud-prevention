@@ -191,120 +191,90 @@ main() {
 
 curl -X POST "localhost:8080/sql/v1beta1/namespaces/default/sqlscripts" \
   -H "Content-Type: application/json" \
-  -d '{"script":"CREATE TABLE purchase_stream (
-  transaction_time TIMESTAMP(3),
-  transaction_id STRING,
-  product_id STRING,
-  price FLOAT,
-  quantity INT,
-  state STRING,
-  is_member BOOLEAN,
-  member_discount FLOAT,
-  add_supplements BOOLEAN,
-  supplement_price FLOAT,
-  total_purchase FLOAT,
-  WATERMARK FOR transaction_time AS transaction_time - INTERVAL '\''1'\'' SECOND
+  -d '{"script":"CREATE TABLE `transactions` (
+  `txId` STRING,
+  `cardId` STRING,
+  `cardNumber` STRING,
+  `cardBrand` STRING,
+  `accountId` STRING,
+  `amount` STRING,
+  `currency` STRING,
+  `merchantId` STRING,
+  `country` STRING,
+  `eventTime` BIGINT,
+  `event_ts` AS TO_TIMESTAMP_LTZ(`eventTime`, 3),
+  WATERMARK FOR `event_ts` AS `event_ts` - INTERVAL '\''1'\'' SECOND
 ) WITH (
-    '\''connector'\''='\''kafka'\'',
-    '\''properties.bootstrap.servers'\''='\''host.minikube.internal:9092'\'',
-    '\''format'\''='\''json'\'',
-    '\''topic'\'' = '\''store.purchases'\'',
-    '\''properties.group.id'\'' = '\''flink-jobs'\'',
-    '\''scan.startup.mode'\'' = '\''earliest-offset'\'',
-    '\''properties.auto.offset.reset'\'' = '\''earliest'\''
+  '\''connector'\'' = '\''kafka'\'',
+  '\''format'\'' = '\''json'\'',
+  '\''json.ignore-parse-errors'\'' = '\''true'\'',
+  '\''properties.bootstrap.servers'\'' = '\''host.minikube.internal:9092'\'',
+  '\''properties.group.id'\'' = '\''flink-fraud-detector'\'',
+  '\''scan.startup.mode'\'' = '\''earliest-offset'\'',
+  '\''topic'\'' = '\''transactions'\''
 );
 
-CREATE TABLE master_product (
-  product_id string,
-  category string,
-  item string,
-  size string,
-  cogs string,
-  price string,
-  inventory_level string,
-  contains_fruit string,
-  contains_veggies string,
-  contains_nuts string,
-  contains_caffeine string,
-  PRIMARY KEY (product_id) NOT ENFORCED
+CREATE TABLE `alerts` (
+  `alertId` STRING,
+  `card_hash` STRING,
+  `country` STRING,
+  `transaction_id` STRING,
+  `rule` STRING,
+  `score` DOUBLE,
+  `details` STRING,
+  `alertTime` TIMESTAMP(3) WITH LOCAL TIME ZONE
 ) WITH (
-  '\''connector'\'' = '\''filesystem'\'',
-  '\''path'\'' = '\''s3://data/product'\'',
-  '\''format'\'' = '\''csv'\''
-);","displayName":"Table DDL","name":"namespaces/default/sqlscripts/table-ddl"}'
+  '\''connector'\'' = '\''kafka'\'',
+  '\''format'\'' = '\''json'\'',
+  '\''properties.bootstrap.servers'\'' = '\''host.minikube.internal:9092'\'',
+  '\''properties.group.id'\'' = '\''flink-fraud-alert'\'',
+  '\''scan.startup.mode'\'' = '\''earliest-offset'\'',
+  '\''topic'\'' = '\''alerts'\''
+);","displayName":"Kafka Table DDL","name":"namespaces/default/sqlscripts/kafka-table-ddl"}'
 
 
 curl -X POST "localhost:8080/sql/v1beta1/namespaces/default/sqlscripts" \
   -H "Content-Type: application/json" \
   -d '{"script":"
-## Query 1
+CREATE VIEW `card_5m` (
+  `cardId` STRING,
+  `window_start` TIMESTAMP(3) NOT NULL,
+  `window_end` TIMESTAMP(3) NOT NULL,
+  `tx_count` BIGINT NOT NULL,
+  `amount_sum` DECIMAL(38, 2)
+)
+AS SELECT `cardId`, `window_start`, `window_end`, COUNT(*) AS `tx_count`, SUM(`amount`) AS `amount_sum`
+FROM TABLE(TUMBLE(TABLE `vvp`.`fraud`.`transactions`, DESCRIPTOR(`event_ts`), INTERVAL '\''5'\'' MINUTE))
+GROUP BY `cardId`, `window_start`, `window_end`;
 
-SELECT
-   transaction_time,
-   item,
-   category,
-   quantity,
-   total_purchase
-FROM purchase_stream
-JOIN master_product
-ON purchase_stream.product_id = master_product.product_id
+CREATE VIEW `travel_matches` (
+  `cardId` STRING,
+  `txId1` STRING,
+  `txId2` STRING,
+  `country1` STRING,
+  `country2` STRING,
+  `ts1` TIMESTAMP(3) WITH LOCAL TIME ZONE,
+  `ts2` TIMESTAMP(3) WITH LOCAL TIME ZONE
+)
+AS SELECT `cardId`, `txId1`, `txId2`, `country1`, `country2`, `ts1`, `ts2`
+FROM `vvp`.`fraud`.`transactions` MATCH_RECOGNIZE(
+PARTITION BY `cardId`
+ORDER BY `event_ts`
+MEASURES `A`.`txId` AS `txId1`, `B`.`txId` AS `txId2`, `A`.`country` AS `country1`, `B`.`country` AS `country2`, `A`.`event_ts` AS `ts1`, `B`.`event_ts` AS `ts2`
+ONE ROW PER MATCH
+AFTER MATCH SKIP TO LAST `B`
+PATTERN (`A` `B`)
+DEFINE `B` AS `B`.`country` <> `A`.`country` AND `B`.`event_ts` <= `A`.`event_ts` + INTERVAL '\''10'\'' MINUTE);
 
-## Query 2
-SELECT
-   item,
-   SUM(total_purchase) AS sum_total_purchase,
-   TUMBLE_START(transaction_time, INTERVAL '\''10'\'' SECONDS) AS purchase_window
-FROM purchase_stream
-JOIN master_product
-ON purchase_stream.product_id = master_product.product_id
-GROUP BY
-  TUMBLE(transaction_time, INTERVAL '\''10'\'' SECONDS),
-  item
-
-## Query 3
-SELECT
-   item,
-   SUM(total_purchase) AS sum_total_purchase,
-   HOP_START(transaction_time, INTERVAL '\''10'\'' SECONDS, INTERVAL '\''60'\'' SECONDS) AS purchase_window
-FROM purchase_stream
-JOIN master_product
-ON purchase_stream.product_id = master_product.product_id
-WHERE category = '\''Superfoods Smoothies'\''
-GROUP BY
-  HOP(transaction_time, INTERVAL '\''10'\'' SECONDS, INTERVAL '\''60'\'' SECONDS),
-  item
-
-## Query 4
-SELECT
-   item,
-   category,
-   state,
-   COUNT(*) AS count_transactions,
-   SUM(quantity) AS sum_quantity,
-   SUM(purchase_stream.price) AS sum_price,
-   SUM(member_discount) AS sum_member_discount,
-   SUM(supplement_price) AS sum_supplement_price,
-   SUM(total_purchase) AS sum_total_purchase,
-   AVG(total_purchase) AS avg_total_purchase,
-   TUMBLE_START(transaction_time, INTERVAL '\''30'\'' SECONDS) AS purchase_window
-FROM purchase_stream
-JOIN master_product
-ON purchase_stream.product_id = master_product.product_id
-GROUP BY
-  TUMBLE(transaction_time, INTERVAL '\''30'\'' SECONDS),
-  item,
-	category,
-	state
-
-","displayName":"Test Queries","name":"namespaces/default/sqlscripts/test-queries"}'
+","displayName":"Views DDL","name":"namespaces/default/sqlscripts/view-ddl"}'
 
 
 curl -X POST "localhost:8080/sql/v1beta1/namespaces/default/sqlscripts" \
   -H "Content-Type: application/json" \
-  -d '{"script":"CREATE CATALOG dwh WITH (
+  -d '{"script":"CREATE CATALOG fraud WITH (
   '\''type'\'' = '\''jdbc'\'',
   '\''base-url'\'' = '\''jdbc:postgresql://host.minikube.internal:5432'\'',
-  '\''default-database'\'' = '\''sales_report'\'',
+  '\''default-database'\'' = '\''fraud'\'',
   '\''username'\'' = '\''root'\'',
   '\''password'\'' = '\''admin1'\''
 )","displayName":"Create Catalog","name":"namespaces/default/sqlscripts/create-catalog"}'
