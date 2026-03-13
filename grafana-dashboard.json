@@ -18,296 +18,13 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 1,
+  "id": 2,
   "links": [],
-  "liveNow": true,
   "panels": [
     {
       "datasource": {
-        "type":  "sales_dwh", "uid": "${datasource}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "decimals": 0,
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": 0
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "currencyUSD"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 5,
-        "w": 8,
-        "x": 0,
-        "y": 0
-      },
-      "id": 4,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "percentChangeColorMode": "standard",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "/^Total Sales$/",
-          "values": false
-        },
-        "showPercentChange": false,
-        "text": {},
-        "textMode": "value",
-        "wideLayout": true
-      },
-      "pluginVersion": "12.1.0",
-      "targets": [
-        {
-          "datasource": {
-            "type":  "sales_dwh", "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT SUM(fact_sum_total_purchase) AS \"Total Sales\" FROM purchase_report \nWHERE purchase_time BETWEEN $__timeFrom() AND $__timeTo() ",
-          "refId": "A",
-          "sql": {
-            "columns": [
-              {
-                "alias": "\"Total Sales\"",
-                "name": "SUM",
-                "parameters": [
-                  {
-                    "name": "fact_sum_total_purchase",
-                    "type": "functionParameter"
-                  }
-                ],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50
-          },
-          "table": "purchase_report"
-        }
-      ],
-      "title": "Total Sales",
-      "transparent": true,
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type":  "sales_dwh", "uid": "${datasource}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "fixedColor": "dark-yellow",
-            "mode": "fixed"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": 0
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "short"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 5,
-        "w": 8,
-        "x": 8,
-        "y": 0
-      },
-      "id": 5,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "percentChangeColorMode": "standard",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "12.1.0",
-      "targets": [
-        {
-          "datasource": {
-            "type":  "sales_dwh", "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT SUM(fact_count_transactions) AS \"Transactions\" FROM purchase_report \nWHERE purchase_time BETWEEN $__timeFrom() AND $__timeTo() ",
-          "refId": "A",
-          "sql": {
-            "columns": [
-              {
-                "alias": "\"Transactions\"",
-                "name": "SUM",
-                "parameters": [
-                  {
-                    "name": "fact_count_transactions",
-                    "type": "functionParameter"
-                  }
-                ],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50
-          },
-          "table": "purchase_report"
-        }
-      ],
-      "title": "Transactions",
-      "transparent": true,
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type":  "sales_dwh", "uid": "${datasource}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "fixedColor": "dark-yellow",
-            "mode": "fixed"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": 0
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "short"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 5,
-        "w": 8,
-        "x": 16,
-        "y": 0
-      },
-      "id": 6,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "percentChangeColorMode": "standard",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "12.1.0",
-      "targets": [
-        {
-          "datasource": {
-            "type":  "sales_dwh", "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT SUM(fact_sum_quantity) AS \"Transactions\" FROM purchase_report \nWHERE purchase_time BETWEEN $__timeFrom() AND $__timeTo() ",
-          "refId": "A",
-          "sql": {
-            "columns": [
-              {
-                "alias": "\"Transactions\"",
-                "name": "SUM",
-                "parameters": [
-                  {
-                    "name": "fact_sum_quantity",
-                    "type": "functionParameter"
-                  }
-                ],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50
-          },
-          "table": "purchase_report"
-        }
-      ],
-      "title": "Units Sold",
-      "transparent": true,
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type":  "sales_dwh", "uid": "${datasource}"
+        "type": "grafana-postgresql-datasource",
+        "uid": "aff81b3ebrmyob"
       },
       "fieldConfig": {
         "defaults": {
@@ -326,118 +43,100 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 9,
-        "w": 11,
+        "h": 10,
+        "w": 10,
         "x": 0,
-        "y": 5
+        "y": 0
       },
-      "id": 1,
+      "id": 2,
       "options": {
         "displayLabels": [
+          "percent",
           "name"
         ],
         "legend": {
+          "calcs": [],
           "displayMode": "list",
           "placement": "right",
           "showLegend": true,
           "values": [
             "value"
-          ]
+          ],
+          "width": 0
         },
-        "pieType": "donut",
+        "pieType": "pie",
         "reduceOptions": {
-          "calcs": [],
-          "fields": "/^count$/",
-          "limit": 10,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
           "values": true
         },
+        "sort": "desc",
         "tooltip": {
           "hideZeros": false,
           "mode": "single",
           "sort": "none"
         }
       },
-      "pluginVersion": "12.1.0",
+      "pluginVersion": "12.3.1",
       "targets": [
         {
+          "dataset": "fraud",
           "datasource": {
-            "type":  "sales_dwh", "uid": "${datasource}"
+            "type": "grafana-postgresql-datasource",
+            "uid": "aff81b3ebrmyob"
           },
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COUNT(*), dim_state FROM purchase_report         \nWHERE purchase_time BETWEEN $__timeFrom() AND $__timeTo()  \nGROUP BY dim_state LIMIT 50 ",
+          "rawSql": "SELECT COUNT(*), rule FROM alerts         \nWHERE alert_time BETWEEN $__timeFrom() AND $__timeTo()  \nGROUP BY rule",
           "refId": "A",
           "sql": {
             "columns": [
               {
-                "name": "COUNT",
-                "parameters": [
-                  {
-                    "name": "*",
-                    "type": "functionParameter"
-                  }
-                ],
-                "type": "function"
-              },
-              {
-                "parameters": [
-                  {
-                    "name": "dim_state",
-                    "type": "functionParameter"
-                  }
-                ],
+                "parameters": [],
                 "type": "function"
               }
             ],
             "groupBy": [
               {
                 "property": {
-                  "name": "dim_state",
                   "type": "string"
                 },
                 "type": "groupBy"
               }
             ],
             "limit": 50
-          },
-          "table": "purchase_report"
+          }
         }
       ],
-      "title": "Sales per State",
+      "title": "Fraud by Category",
       "type": "piechart"
     },
     {
       "datasource": {
-        "type":  "sales_dwh", "uid": "${datasource}"
+        "type": "grafana-postgresql-datasource",
+        "uid": "aff81b3ebrmyob"
       },
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "palette-classic"
+            "mode": "thresholds"
           },
           "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "fillOpacity": 80,
-            "gradientMode": "none",
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "footer": {
+              "reducers": []
+            },
             "hideFrom": {
-              "legend": false,
-              "tooltip": false,
               "viz": false
             },
-            "lineWidth": 1,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
+            "inspect": false
           },
-          "fieldMinMax": false,
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
@@ -451,59 +150,64 @@
                 "value": 80
               }
             ]
-          },
-          "unit": "short"
+          }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "card_hash"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 149
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "rule"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 191
+              }
+            ]
+          }
+        ]
       },
       "gridPos": {
-        "h": 9,
-        "w": 13,
-        "x": 11,
-        "y": 5
+        "h": 20,
+        "w": 14,
+        "x": 10,
+        "y": 0
       },
       "id": 3,
       "options": {
-        "barRadius": 0,
-        "barWidth": 0.9,
-        "colorByField": "dim_category\\dim_state",
-        "fullHighlight": false,
-        "groupWidth": 0.7,
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "orientation": "vertical",
-        "showValue": "never",
-        "stacking": "normal",
-        "tooltip": {
-          "hideZeros": false,
-          "mode": "single",
-          "sort": "none"
-        },
-        "xField": "dim_category\\dim_state",
-        "xTickLabelRotation": -45,
-        "xTickLabelSpacing": 0
+        "cellHeight": "sm",
+        "showHeader": true
       },
-      "pluginVersion": "12.1.0",
+      "pluginVersion": "12.3.1",
       "targets": [
         {
+          "dataset": "fraud",
           "datasource": {
-            "type":  "sales_dwh", "uid": "${datasource}"
+            "type": "grafana-postgresql-datasource",
+            "uid": "aff81b3ebrmyob"
           },
-          "editorMode": "code",
+          "editorMode": "builder",
           "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT dim_category, dim_state, SUM(fact_sum_total_purchase) AS \"Sales\" FROM purchase_report \nWHERE purchase_time BETWEEN $__timeFrom() AND $__timeTo() \nGROUP BY dim_category, dim_state ORDER BY dim_category ",
+          "rawSql": "SELECT card_hash, rule, details FROM alerts WHERE $__timeFilter(alert_time) ORDER BY alert_time LIMIT 50 ",
           "refId": "A",
           "sql": {
             "columns": [
               {
                 "parameters": [
                   {
-                    "name": "dim_category",
+                    "name": "card_hash",
                     "type": "functionParameter"
                   }
                 ],
@@ -512,18 +216,16 @@
               {
                 "parameters": [
                   {
-                    "name": "dim_state",
+                    "name": "rule",
                     "type": "functionParameter"
                   }
                 ],
                 "type": "function"
               },
               {
-                "alias": "\"Sales\"",
-                "name": "SUM",
                 "parameters": [
                   {
-                    "name": "fact_sum_total_purchase",
+                    "name": "details",
                     "type": "functionParameter"
                   }
                 ],
@@ -533,52 +235,63 @@
             "groupBy": [
               {
                 "property": {
-                  "name": "dim_category",
-                  "type": "string"
-                },
-                "type": "groupBy"
-              },
-              {
-                "property": {
-                  "name": "dim_state",
                   "type": "string"
                 },
                 "type": "groupBy"
               }
             ],
+            "limit": 50,
             "orderBy": {
               "property": {
-                "name": "dim_category",
+                "name": "alert_time",
                 "type": "string"
               },
               "type": "property"
-            }
+            },
+            "whereJsonTree": {
+              "children1": [
+                {
+                  "id": "aa9a989b-cdef-4012-b456-719cdd408a8f",
+                  "properties": {
+                    "field": "alert_time",
+                    "fieldSrc": "field",
+                    "operator": "macros",
+                    "value": [
+                      "timeFilter"
+                    ],
+                    "valueError": [
+                      null
+                    ],
+                    "valueSrc": [
+                      "value"
+                    ],
+                    "valueType": [
+                      "datetime"
+                    ]
+                  },
+                  "type": "rule"
+                }
+              ],
+              "id": "a88899ba-0123-4456-b89a-b19cdcf6513a",
+              "type": "group"
+            },
+            "whereString": "$__timeFilter(alert_time)"
           },
-          "table": "purchase_report"
+          "table": "alerts"
         }
       ],
-      "title": "Category / State",
-      "transformations": [
-        {
-          "id": "groupingToMatrix",
-          "options": {
-            "columnField": "dim_category",
-            "emptyValue": "zero",
-            "rowField": "dim_state",
-            "valueField": "Sales"
-          }
-        }
-      ],
-      "type": "barchart"
+      "title": "Last Alerts",
+      "type": "table"
     },
     {
       "datasource": {
-        "type":  "sales_dwh", "uid": "${datasource}"
+        "type": "grafana-postgresql-datasource",
+        "uid": "aff81b3ebrmyob"
       },
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "continuous-RdYlGr"
+            "mode": "palette-classic"
           },
           "custom": {
             "axisBorderShow": false,
@@ -589,7 +302,7 @@
             "barAlignment": 0,
             "barWidthFactor": 0.6,
             "drawStyle": "line",
-            "fillOpacity": 20,
+            "fillOpacity": 0,
             "gradientMode": "none",
             "hideFrom": {
               "legend": false,
@@ -604,6 +317,7 @@
               "type": "linear"
             },
             "showPoints": "auto",
+            "showValues": true,
             "spanNulls": false,
             "stacking": {
               "group": "A",
@@ -631,12 +345,12 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
-        "w": 24,
+        "h": 10,
+        "w": 10,
         "x": 0,
-        "y": 14
+        "y": 10
       },
-      "id": 2,
+      "id": 1,
       "options": {
         "legend": {
           "calcs": [],
@@ -644,43 +358,42 @@
           "placement": "bottom",
           "showLegend": true
         },
-        "timezone": [
-          "utc"
-        ],
         "tooltip": {
           "hideZeros": false,
           "mode": "single",
           "sort": "none"
         }
       },
-      "pluginVersion": "12.1.0",
+      "pluginVersion": "12.3.1",
       "targets": [
         {
+          "dataset": "fraud",
           "datasource": {
-            "type":  "sales_dwh", "uid": "${datasource}"
+            "type": "grafana-postgresql-datasource",
+            "uid": "aff81b3ebrmyob"
           },
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT SUM(fact_sum_supplement_price)  AS \"Supplements\", SUM(fact_sum_total_purchase) AS \"Total Sales\", purchase_time FROM purchase_report \nWHERE purchase_time BETWEEN $__timeFrom() AND $__timeTo() \nGROUP BY purchase_time",
+          "rawSql": "SELECT \n  COUNT(*) AS Total,\n  date_trunc('minute', alert_time) AS alert_time\nFROM alerts\nWHERE alert_time BETWEEN $__timeFrom() AND $__timeTo()\nGROUP BY date_trunc('minute', alert_time)\nORDER BY alert_time",
           "refId": "A",
           "sql": {
             "columns": [
               {
-                "alias": "\"Sales\"",
-                "name": "SUM",
                 "parameters": [
                   {
-                    "name": "fact_avg_total_purchase",
+                    "name": "alert_time",
                     "type": "functionParameter"
                   }
                 ],
                 "type": "function"
               },
               {
+                "alias": "\"Total\"",
+                "name": "COUNT",
                 "parameters": [
                   {
-                    "name": "purchase_time",
+                    "name": "alertid",
                     "type": "functionParameter"
                   }
                 ],
@@ -690,7 +403,7 @@
             "groupBy": [
               {
                 "property": {
-                  "name": "purchase_time",
+                  "name": "alert_time",
                   "type": "string"
                 },
                 "type": "groupBy"
@@ -698,26 +411,26 @@
             ],
             "limit": 50
           },
-          "table": "purchase_report"
+          "table": "alerts"
         }
       ],
-      "title": "Sales over time",
+      "title": "Alerts over time",
       "type": "timeseries"
     }
   ],
   "preload": false,
-  "schemaVersion": 41,
+  "schemaVersion": 42,
   "tags": [],
   "templating": {
     "list": []
   },
   "time": {
-    "from": "now-30m",
+    "from": "now-6h",
     "to": "now"
   },
   "timepicker": {},
-  "timezone": "utc",
-  "title": "Sales Report",
-  "uid": "dbb19859-9c13-45c1-9ed4-179302aa5da7",
-  "version": 42
+  "timezone": "browser",
+  "title": "Fraud Alerts",
+  "uid": "gfwj5m",
+  "version": 13
 }
