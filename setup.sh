@@ -48,20 +48,20 @@ install_minio() {
     --namespace "vvp" \
     upgrade --install "minio" "minio" \
     --repo https://charts.helm.sh/stable \
-    --values /root/ververica-platform-playground/values-minio.yaml
+    --values /root/ververica-platform-playground/setup/helm/values-minio.yaml
 }
 
 install_grafana() {
   helm_install grafana grafana "$VVP_NAMESPACE" \
     --repo https://grafana.github.io/helm-charts \
-    --values /root/ververica-platform-playground/values-grafana.yaml
+    --values /root/ververica-platform-playground/setup/helm/values-grafana.yaml
 }
 
 helm_install_vvp() {
   if [ -n "$VVP_CHART" ];  then
     helm_install vvp "$VVP_CHART" "$VVP_NAMESPACE" \
       --version "$VVP_CHART_VERSION" \
-      --values /root/ververica-platform-playground/values-vvp.yaml \
+      --values /root/ververica-platform-playground/setup/helm/values-vvp.yaml \
       --set rbac.additionalNamespaces="{$JOBS_NAMESPACE}" \
       --set vvp.blobStorage.s3.endpoint="http://minio.$VVP_NAMESPACE.svc:9000" \
       "$@"
@@ -69,7 +69,7 @@ helm_install_vvp() {
     helm_install vvp ververica-platform "$VVP_NAMESPACE" \
       --repo https://charts.ververica.com \
       --version "$VVP_CHART_VERSION" \
-      --values /root/ververica-platform-playground/values-vvp.yaml \
+      --values /root/ververica-platform-playground/setup/helm/values-vvp.yaml \
       --set rbac.additionalNamespaces="{$JOBS_NAMESPACE}" \
       --set vvp.blobStorage.s3.endpoint="http://minio.$VVP_NAMESPACE.svc:9000" \
       "$@"
@@ -98,13 +98,22 @@ install_vvp() {
   install_logging="$3"
   helm_additional_parameters=
   
-  # try installation once (aborts and displays license)
-  helm_install_vvp $helm_additional_parameters
+  if [ "$edition" == "enterprise" ]; then
+    echo "Installing Enterprise..."
+    helm_install_vvp \
+      --values /root/ververica-platform-playground/setup/helm/values-license.yaml \
+      $helm_additional_parameters
+  else
+    # try installation once (aborts and displays license)
+    helm_install_vvp $helm_additional_parameters
 
-  echo "Installing..."
-  helm_install_vvp \
-    --set acceptCommunityEditionLicense=true \
-     $helm_additional_parameters
+    echo "Installing Community..."
+    helm_install_vvp \
+      --set acceptCommunityEditionLicense=true \
+      $helm_additional_parameters
+
+  fi
+
 }
 
 main() {
@@ -178,6 +187,149 @@ main() {
   curl -i -X POST localhost:8080/api/v1/namespaces/default/deployment-targets -H "Content-Type: application/yaml" --data-binary "@/root/ververica-platform-playground/vvp-resources/deployment_target.yaml"
   curl -i -X POST localhost:8080/api/v1/namespaces/default/sessionclusters -H "Content-Type: application/yaml" --data-binary "@/root/ververica-platform-playground/vvp-resources/sessioncluster.yaml"
   curl -i -X POST 'localhost:8080/namespaces/v1/namespaces/default:setPreviewSessionCluster' -H 'accept: application/json' -H 'Content-Type: application/json' -d '{"previewSessionClusterName": "sql-editor"}'
+
+
+curl -X POST "localhost:8080/sql/v1beta1/namespaces/default/sqlscripts" \
+  -H "Content-Type: application/json" \
+  -d '{"script":"CREATE TABLE `transactions` (
+  `txId` STRING,
+  `cardId` STRING,
+  `cardNumber` STRING,
+  `cardBrand` STRING,
+  `accountId` STRING,
+  `amount` DECIMAL(12, 2),
+  `currency` STRING,
+  `merchantId` STRING,
+  `country` STRING,
+  `eventTime` BIGINT,
+  `event_ts` AS TO_TIMESTAMP_LTZ(`eventTime`, 3),
+  WATERMARK FOR `event_ts` AS `event_ts` - INTERVAL '\''1'\'' SECOND
+) WITH (
+  '\''connector'\'' = '\''kafka'\'',
+  '\''format'\'' = '\''json'\'',
+  '\''json.ignore-parse-errors'\'' = '\''true'\'',
+  '\''properties.bootstrap.servers'\'' = '\''host.minikube.internal:9092'\'',
+  '\''properties.group.id'\'' = '\''flink-fraud-detector'\'',
+  '\''scan.startup.mode'\'' = '\''earliest-offset'\'',
+  '\''topic'\'' = '\''transactions'\''
+);
+
+CREATE TABLE `alerts` (
+  `alertId` STRING,
+  `card_hash` STRING,
+  `country` STRING,
+  `transaction_id` STRING,
+  `rule` STRING,
+  `score` DOUBLE,
+  `details` STRING,
+  `alertTime` TIMESTAMP(3) WITH LOCAL TIME ZONE
+) WITH (
+  '\''connector'\'' = '\''kafka'\'',
+  '\''format'\'' = '\''json'\'',
+  '\''properties.bootstrap.servers'\'' = '\''host.minikube.internal:9092'\'',
+  '\''properties.group.id'\'' = '\''flink-fraud-alert'\'',
+  '\''scan.startup.mode'\'' = '\''earliest-offset'\'',
+  '\''topic'\'' = '\''alerts'\''
+);","displayName":"Kafka Table DDL","name":"namespaces/default/sqlscripts/kafka-table-ddl"}'
+
+
+curl -X POST "localhost:8080/sql/v1beta1/namespaces/default/sqlscripts" \
+  -H "Content-Type: application/json" \
+  -d '{"script":"
+CREATE VIEW `card_5m`
+AS SELECT `cardId`, `window_start`, `window_end`, COUNT(*) AS `tx_count`, SUM(`amount`) AS `amount_sum`
+FROM TABLE(TUMBLE(TABLE `transactions`, DESCRIPTOR(`event_ts`), INTERVAL '\''5'\'' MINUTE))
+GROUP BY `cardId`, `window_start`, `window_end`;
+
+CREATE VIEW `travel_matches`
+AS SELECT `cardId`, `txId1`, `txId2`, `country1`, `country2`, `ts1`, `ts2`
+FROM `transactions` MATCH_RECOGNIZE(
+PARTITION BY `cardId`
+ORDER BY `event_ts`
+MEASURES `A`.`txId` AS `txId1`, `B`.`txId` AS `txId2`, `A`.`country` AS `country1`, `B`.`country` AS `country2`, `A`.`event_ts` AS `ts1`, `B`.`event_ts` AS `ts2`
+ONE ROW PER MATCH
+AFTER MATCH SKIP TO LAST `B`
+PATTERN (`A` `B`)
+DEFINE `B` AS `B`.`country` <> `A`.`country` AND `B`.`event_ts` <= `A`.`event_ts` + INTERVAL '\''10'\'' MINUTE);
+","displayName":"Views DDL","name":"namespaces/default/sqlscripts/view-ddl"}'
+
+
+curl -X POST "localhost:8080/sql/v1beta1/namespaces/default/sqlscripts" \
+  -H "Content-Type: application/json" \
+  -d '{"script":"INSERT INTO alerts
+SELECT
+  CONCAT('\''travel-'\'', cardId, '\''-'\'', txId2) AS alertId,
+  cardId AS cardId,
+  txId2 AS txId,
+  '\''IMPOSSIBLE_TRAVEL'\'' AS rule,
+  0.95 AS score,
+  CONCAT(
+    '\''{\"from\":\"'\'', country1,
+    '\''\",\"to\":\"'\'', country2,
+    '\''\",\"prevTxId\":\"'\'', txId1,
+    '\''\",\"delta_minutes\":'\'', CAST(TIMESTAMPDIFF(MINUTE, ts1, ts2) AS STRING),
+    '\''}'\''
+  ) AS details,
+  ts2 AS alertTime
+FROM travel_matches;
+","displayName":"Impossible Travel Rule","name":"namespaces/default/sqlscripts/impossible-travel-rule"}'
+
+curl -X POST "localhost:8080/sql/v1beta1/namespaces/default/sqlscripts" \
+  -H "Content-Type: application/json" \
+  -d '{"script":"INSERT INTO alerts
+SELECT
+  CONCAT('\''vel-'\'', cardId, '\''-'\'', DATE_FORMAT(window_end, '\''yyyyMMddHHmm'\'')) AS alertId,
+  cardId AS cardId,
+  CAST(NULL AS STRING) AS txId,
+  '\''VELOCITY_BURST_5M'\'' AS rule,
+  LEAST(0.99, 0.60 + 0.05 * tx_count) AS score,
+  CONCAT('\''{\"tx_count\":'\'', CAST(tx_count AS STRING),
+         '\'',\"amount_sum\":'\'', CAST(amount_sum AS STRING), 
+         '\'',\"start\":\"'\'', CAST(window_start AS STRING),
+         '\''\",\"end\":\"'\'', CAST(window_end AS STRING),
+         '\''\"}'\'') AS details,
+  window_end AS alertTime
+FROM card_5m
+WHERE tx_count >= 5 OR amount_sum >= 1200;
+","displayName":"Velocity Rule","name":"namespaces/default/sqlscripts/velocity-rule"}'
+
+curl -X POST "localhost:8080/sql/v1beta1/namespaces/default/sqlscripts" \
+  -H "Content-Type: application/json" \
+  -d '{"script":"INSERT INTO alerts
+SELECT
+  CONCAT('\''high-value-'\'', cardId, '\''-'\'', txId) AS alertId,
+  cardId,
+  txId,
+  '\''HIGH_VALUE'\'' AS rule,
+  LEAST(0.99, 0.70 + (CAST(amount AS DOUBLE) / 50000.0)) AS score,
+  CONCAT(
+    '\''{\"amount\":'\'', CAST(amount AS STRING),
+    '\'',\"currency\":\"'\'', currency,
+    '\''\",\"merchantId\":\"'\'', merchantId,
+    '\''\",\"country\":\"'\'', country,
+    '\''\"}'\''
+  ) AS details,
+  CAST(event_ts AS TIMESTAMP(3) WITH LOCAL TIME ZONE) AS alertTime
+FROM transactions 
+WHERE amount > 5000.00;
+","displayName":"High Value Rule","name":"namespaces/default/sqlscripts/high-value-rule"}'
+
+curl -X POST "localhost:8080/sql/v1beta1/namespaces/default/sqlscripts" \
+  -H "Content-Type: application/json" \
+  -d '{"script":"CREATE CATALOG fraud WITH (
+  '\''type'\'' = '\''jdbc'\'',
+  '\''base-url'\'' = '\''jdbc:postgresql://host.minikube.internal:5432'\'',
+  '\''default-database'\'' = '\''fraud'\'',
+  '\''username'\'' = '\''root'\'',
+  '\''password'\'' = '\''admin1'\''
+)","displayName":"Create Catalog","name":"namespaces/default/sqlscripts/create-catalog"}'
+
+curl -X POST "localhost:8080/sql/v1beta1/namespaces/default/sqlscripts" \
+  -H "Content-Type: application/json" \
+  -d '{"script":"INSERT INTO fraud.fraud.alerts 
+SELECT * FROM alerts",
+"displayName":"Alerts Sink","name":"namespaces/default/sqlscripts/alerts-sink"}'
+
 
 }
 
