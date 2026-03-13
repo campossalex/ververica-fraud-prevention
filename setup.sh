@@ -314,10 +314,19 @@ FROM transactions
 WHERE amount > 5000.00;
 ","displayName":"High Value Rule","name":"namespaces/default/sqlscripts/high-value-rule"}'
 
+curl -X POST "localhost:8080/sql/v1beta1/namespaces/default/sqlscripts" \
+  -H "Content-Type: application/json" \
+  -d '{"script":"CREATE CATALOG fraud WITH (
+  '\''type'\'' = '\''jdbc'\'',
+  '\''base-url'\'' = '\''jdbc:postgresql://host.minikube.internal:5432'\'',
+  '\''default-database'\'' = '\''fraud'\'',
+  '\''username'\'' = '\''root'\'',
+  '\''password'\'' = '\''admin1'\''
+)","displayName":"Create Catalog","name":"namespaces/default/sqlscripts/create-catalog"}'
 
 curl -X POST "localhost:8080/sql/v1beta1/namespaces/default/sqlscripts" \
   -H "Content-Type: application/json" \
-  -d '{"script":"INSERT INTO alerts 
+  -d '{"script":"INSERT INTO fraud.fraud.alerts 
 SELECT * FROM alerts",
 "displayName":"Alerts Sink","name":"namespaces/default/sqlscripts/alerts-sink"}'
 
