@@ -197,7 +197,7 @@ curl -X POST "localhost:8080/sql/v1beta1/namespaces/default/sqlscripts" \
   `cardNumber` STRING,
   `cardBrand` STRING,
   `accountId` STRING,
-  `amount` STRING,
+  `amount` DECIMAL(12, 2),
   `currency` STRING,
   `merchantId` STRING,
   `country` STRING,
@@ -236,28 +236,14 @@ CREATE TABLE `alerts` (
 curl -X POST "localhost:8080/sql/v1beta1/namespaces/default/sqlscripts" \
   -H "Content-Type: application/json" \
   -d '{"script":"
-CREATE VIEW `card_5m` (
-  `cardId` STRING,
-  `window_start` TIMESTAMP(3) NOT NULL,
-  `window_end` TIMESTAMP(3) NOT NULL,
-  `tx_count` BIGINT NOT NULL,
-  `amount_sum` DECIMAL(38, 2)
-)
+CREATE VIEW `card_5m`
 AS SELECT `cardId`, `window_start`, `window_end`, COUNT(*) AS `tx_count`, SUM(`amount`) AS `amount_sum`
-FROM TABLE(TUMBLE(TABLE `vvp`.`fraud`.`transactions`, DESCRIPTOR(`event_ts`), INTERVAL '\''5'\'' MINUTE))
+FROM TABLE(TUMBLE(TABLE `transactions`, DESCRIPTOR(`event_ts`), INTERVAL '\''5'\'' MINUTE))
 GROUP BY `cardId`, `window_start`, `window_end`;
 
-CREATE VIEW `travel_matches` (
-  `cardId` STRING,
-  `txId1` STRING,
-  `txId2` STRING,
-  `country1` STRING,
-  `country2` STRING,
-  `ts1` TIMESTAMP(3) WITH LOCAL TIME ZONE,
-  `ts2` TIMESTAMP(3) WITH LOCAL TIME ZONE
-)
+CREATE VIEW `travel_matches`
 AS SELECT `cardId`, `txId1`, `txId2`, `country1`, `country2`, `ts1`, `ts2`
-FROM `vvp`.`fraud`.`transactions` MATCH_RECOGNIZE(
+FROM `transactions` MATCH_RECOGNIZE(
 PARTITION BY `cardId`
 ORDER BY `event_ts`
 MEASURES `A`.`txId` AS `txId1`, `B`.`txId` AS `txId2`, `A`.`country` AS `country1`, `B`.`country` AS `country2`, `A`.`event_ts` AS `ts1`, `B`.`event_ts` AS `ts2`
@@ -265,43 +251,75 @@ ONE ROW PER MATCH
 AFTER MATCH SKIP TO LAST `B`
 PATTERN (`A` `B`)
 DEFINE `B` AS `B`.`country` <> `A`.`country` AND `B`.`event_ts` <= `A`.`event_ts` + INTERVAL '\''10'\'' MINUTE);
-
 ","displayName":"Views DDL","name":"namespaces/default/sqlscripts/view-ddl"}'
 
 
 curl -X POST "localhost:8080/sql/v1beta1/namespaces/default/sqlscripts" \
   -H "Content-Type: application/json" \
-  -d '{"script":"CREATE CATALOG fraud WITH (
-  '\''type'\'' = '\''jdbc'\'',
-  '\''base-url'\'' = '\''jdbc:postgresql://host.minikube.internal:5432'\'',
-  '\''default-database'\'' = '\''fraud'\'',
-  '\''username'\'' = '\''root'\'',
-  '\''password'\'' = '\''admin1'\''
-)","displayName":"Create Catalog","name":"namespaces/default/sqlscripts/create-catalog"}'
+  -d '{"script":"INSERT INTO alerts
+SELECT
+  CONCAT('\''travel-'\'', cardId, '\''-'\'', txId2) AS alertId,
+  cardId AS cardId,
+  txId2 AS txId,
+  '\''IMPOSSIBLE_TRAVEL'\'' AS rule,
+  0.95 AS score,
+  CONCAT(
+    '\''{\"from\":\"'\'', country1,
+    '\''\",\"to\":\"'\'', country2,
+    '\''\",\"prevTxId\":\"'\'', txId1,
+    '\''\",\"delta_minutes\":'\'', CAST(TIMESTAMPDIFF(MINUTE, ts1, ts2) AS STRING),
+    '\''}'\''
+  ) AS details,
+  ts2 AS alertTime
+FROM travel_matches;
+","displayName":"Impossible Travel Rule","name":"namespaces/default/sqlscripts/impossible-travel-rule"}'
+
+curl -X POST "localhost:8080/sql/v1beta1/namespaces/default/sqlscripts" \
+  -H "Content-Type: application/json" \
+  -d '{"script":"INSERT INTO alerts
+SELECT
+  CONCAT('\''vel-'\'', cardId, '\''-'\'', DATE_FORMAT(window_end, '\''yyyyMMddHHmm'\'')) AS alertId,
+  cardId AS cardId,
+  CAST(NULL AS STRING) AS txId,
+  '\''VELOCITY_BURST_5M'\'' AS rule,
+  LEAST(0.99, 0.60 + 0.05 * tx_count) AS score,
+  CONCAT('\''{\"tx_count\":'\'', CAST(tx_count AS STRING),
+         '\'',\"amount_sum\":'\'', CAST(amount_sum AS STRING), 
+         '\'',\"start\":\"'\'', CAST(window_start AS STRING),
+         '\''\",\"end\":\"'\'', CAST(window_end AS STRING),
+         '\''\"}'\'') AS details,
+  window_end AS alertTime
+FROM card_5m
+WHERE tx_count >= 5 OR amount_sum >= 1200;
+","displayName":"Velocity Rule","name":"namespaces/default/sqlscripts/velocity-rule"}'
+
+curl -X POST "localhost:8080/sql/v1beta1/namespaces/default/sqlscripts" \
+  -H "Content-Type: application/json" \
+  -d '{"script":"INSERT INTO alerts
+SELECT
+  CONCAT('\''high-value-'\'', cardId, '\''-'\'', txId) AS alertId,
+  cardId,
+  txId,
+  '\''HIGH_VALUE'\'' AS rule,
+  LEAST(0.99, 0.70 + (CAST(amount AS DOUBLE) / 50000.0)) AS score,
+  CONCAT(
+    '\''{\"amount\":'\'', CAST(amount AS STRING),
+    '\'',\"currency\":\"'\'', currency,
+    '\''\",\"merchantId\":\"'\'', merchantId,
+    '\''\",\"country\":\"'\'', country,
+    '\''\"}'\''
+  ) AS details,
+  CAST(event_ts AS TIMESTAMP(3) WITH LOCAL TIME ZONE) AS alertTime
+FROM transactions 
+WHERE amount > 5000.00;
+","displayName":"High Value Rule","name":"namespaces/default/sqlscripts/high-value-rule"}'
 
 
 curl -X POST "localhost:8080/sql/v1beta1/namespaces/default/sqlscripts" \
   -H "Content-Type: application/json" \
-  -d '{"script":"INSERT INTO dwh.sales_report.purchase_report
-SELECT
-   item,
-   category,
-   state,
-   TUMBLE_START(transaction_time, INTERVAL '\''30'\'' SECONDS),
-   COUNT(quantity) ,
-   SUM(quantity) AS sum_quantity,
-   SUM(purchase_stream.price),
-   SUM(member_discount),
-   SUM(supplement_price),
-   SUM(total_purchase),
-   AVG(total_purchase)
-FROM purchase_stream
-JOIN master_product
-ON purchase_stream.product_id = master_product.product_id
-GROUP BY
-  TUMBLE(transaction_time, INTERVAL '\''30'\'' SECONDS),
-  item, category, state",
-"displayName":"Create Job","name":"namespaces/default/sqlscripts/create-job"}'
+  -d '{"script":"INSERT INTO alerts 
+SELECT * FROM alerts",
+"displayName":"Alerts Sink","name":"namespaces/default/sqlscripts/alerts-sink"}'
 
 
 }
