@@ -1,7 +1,7 @@
-<img alt="Ververica Platform" src="vvp-logo.png" width="300px" />
 
 # Fraud Detection use case with Flink SQL
 
+<img alt="Ververica Platform" src="web/fraud-detection-use-case.png" />
 
 
 # Manual Setup
