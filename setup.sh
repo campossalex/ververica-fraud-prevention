@@ -260,6 +260,7 @@ curl -X POST "localhost:8080/sql/v1beta1/namespaces/default/sqlscripts" \
 SELECT
   CONCAT('\''travel-'\'', cardId, '\''-'\'', txId2) AS alertId,
   cardId AS cardId,
+  country1,
   txId2 AS txId,
   '\''IMPOSSIBLE_TRAVEL'\'' AS rule,
   0.95 AS score,
@@ -280,6 +281,7 @@ curl -X POST "localhost:8080/sql/v1beta1/namespaces/default/sqlscripts" \
 SELECT
   CONCAT('\''vel-'\'', cardId, '\''-'\'', DATE_FORMAT(window_end, '\''yyyyMMddHHmm'\'')) AS alertId,
   cardId AS cardId,
+  country,
   CAST(NULL AS STRING) AS txId,
   '\''VELOCITY_BURST_5M'\'' AS rule,
   LEAST(0.99, 0.60 + 0.05 * tx_count) AS score,
@@ -299,6 +301,7 @@ curl -X POST "localhost:8080/sql/v1beta1/namespaces/default/sqlscripts" \
 SELECT
   CONCAT('\''high-value-'\'', cardId, '\''-'\'', txId) AS alertId,
   cardId,
+  country,
   txId,
   '\''HIGH_VALUE'\'' AS rule,
   LEAST(0.99, 0.70 + (CAST(amount AS DOUBLE) / 50000.0)) AS score,
