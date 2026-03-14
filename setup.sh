@@ -237,7 +237,7 @@ curl -X POST "localhost:8080/sql/v1beta1/namespaces/default/sqlscripts" \
   -H "Content-Type: application/json" \
   -d '{"script":"
 CREATE VIEW `card_5m`
-AS SELECT `cardId`, `window_start`, `window_end`, COUNT(*) AS `tx_count`, SUM(`amount`) AS `amount_sum`
+AS SELECT `cardId`, `country`, `window_start`, `window_end`, COUNT(*) AS `tx_count`, SUM(`amount`) AS `amount_sum`
 FROM TABLE(TUMBLE(TABLE `transactions`, DESCRIPTOR(`event_ts`), INTERVAL '\''5'\'' MINUTE))
 GROUP BY `cardId`, `window_start`, `window_end`;
 
