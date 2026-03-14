@@ -70,14 +70,14 @@ curl -X POST http://localhost:8085/api/datasources \
     "type": "postgres",
     "access": "proxy",
     "url": "host.minikube.internal:5432",
-    "database": "sales_report",
+    "database": "fraud",
     "user": "root",
     "secureJsonData": {
       "password": "admin1"
     },
     "jsonData": {
       "sslmode": "disable",
-      "database": "sales_report",
+      "database": "fraud",
       "postgresVersion": 1200,
       "timescaledb": false
     },
@@ -90,7 +90,7 @@ PUBLIC_DNS=$(curl --silent http://169.254.169.254/latest/meta-data/public-hostna
 python3 ververica-platform-playground/registration-app/register_lab_environment.py $PUBLIC_DNS $MYSQL_HOST
 
 ## Run sales gen
-screen -dmS salesgen bash -c 'cd ververica-platform-playground/salesgen/; python3 purchases.py'
+screen -dmS salesgen bash -c 'cd ververica-platform-playground/transactiongen/; python3 transactions.py --bootstrap kubernetes-vm:9092 --topic transactions --rate 10000 --cards 100000 --impossible-travel-rate 0.02 --high-amount-rate 0.04 --burst-rate 0.04'
 
 ## Start Web App
 screen -dmS web_app bash -c 'PUBLIC_DNS=$(curl --silent http://169.254.169.254/latest/meta-data/public-hostname); python3 ververica-platform-playground/web/app.py $PUBLIC_DNS'
