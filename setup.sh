@@ -239,7 +239,7 @@ curl -X POST "localhost:8080/sql/v1beta1/namespaces/default/sqlscripts" \
 CREATE VIEW `card_5m`
 AS SELECT `cardId`, `country`, `window_start`, `window_end`, COUNT(*) AS `tx_count`, SUM(`amount`) AS `amount_sum`
 FROM TABLE(TUMBLE(TABLE `transactions`, DESCRIPTOR(`event_ts`), INTERVAL '\''5'\'' MINUTE))
-GROUP BY `cardId`, `window_start`, `window_end`;
+GROUP BY `cardId`, `country`, `window_start`, `window_end`;
 
 CREATE VIEW `travel_matches`
 AS SELECT `cardId`, `txId1`, `txId2`, `country1`, `country2`, `ts1`, `ts2`
