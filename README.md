@@ -6,6 +6,11 @@ This playground provides a hands-on introduction to Ververica Platform with mini
 
 Please check out the [corresponding getting started guide](https://docs.ververica.com/getting_started/index.html) in the [Ververica Platform documentation](https://docs.ververica.com).  
 
-## About
+# Manual Setup
 
-[Ververica Platform](https://www.ververica.com) is the enterprise stream processing platform by the original creators of [Apache Flink](https://flink.apache.org/). 
+yum update -y  
+yum install -y git  
+  
+cd /root  
+git clone https://github.com/campossalex/ververica-fraud-prevention ververica-platform-playground  
+./ververica-platform-playground/manual_setup.sh  
