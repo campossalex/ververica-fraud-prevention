@@ -32,8 +32,8 @@ sudo yum install shellinabox -y
 echo "OPTS="--no-beep --disable-ssl -s /:LOGIN"" >> /etc/sysconfig/shellinaboxd
 systemctl start shellinaboxd
 
-# Copy Salesgen python script to /home/admin folder
-sudo cp -Rv ververica-platform-playground/salesgen /home/admin/
+# Copy transactiongen python script to /home/admin folder
+sudo cp -Rv ververica-platform-playground/transactiongen /home/admin/
 
 # Copy license yaml
 sudo cp -Rv /values-license.yaml /root/ververica-platform-playground/setup/helm/values-license.yaml
