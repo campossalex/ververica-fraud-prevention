@@ -221,7 +221,7 @@ CREATE TABLE `alerts` (
   `rule` STRING,
   `score` DOUBLE,
   `details` STRING,
-  `alertTime` TIMESTAMP(3) WITH LOCAL TIME ZONE,
+  `alertTime` TIMESTAMP(3),
   `processing_lag` INT
 ) WITH (
   '\''connector'\'' = '\''kafka'\'',
