@@ -234,7 +234,7 @@ CREATE TABLE `alerts` (
 curl -X POST "localhost:8080/sql/v1beta1/namespaces/default/sqlscripts" \
   -H "Content-Type: application/json" \
   -d '{"script":"SELECT * FROM `transactions` (
-);","displayName":"2. Query transaction table","name":"namespaces/default/sqlscripts/kafka-table-ddl"}'
+);","displayName":"2. Query transaction table","name":"namespaces/default/sqlscripts/select-transactions"}'
 
 curl -X POST "localhost:8080/sql/v1beta1/namespaces/default/sqlscripts" \
   -H "Content-Type: application/json" \
@@ -322,7 +322,7 @@ WHERE amount > 5000.00;
 curl -X POST "localhost:8080/sql/v1beta1/namespaces/default/sqlscripts" \
   -H "Content-Type: application/json" \
   -d '{"script":"SELECT * FROM `alerts` (
-);","displayName":"7. Query alert table","name":"namespaces/default/sqlscripts/kafka-table-ddl"}'
+);","displayName":"7. Query alert table","name":"namespaces/default/sqlscripts/select-alerts"}'
 
 
 curl -X POST "localhost:8080/sql/v1beta1/namespaces/default/sqlscripts" \
