@@ -326,9 +326,8 @@ FROM transactions
 WHERE amount > 5000.00;
 ","displayName":"6. Create High Value Rule","name":"namespaces/default/sqlscripts/high-value-rule"}'
 
-curl -X POST "localhost:8080/sql/v1beta1/namespaces/default/sqlscripts" \
-  -H "Content-Type: application/json" \
-  -d '{"script":"SELECT
+curl -X POST "localhost:8080/sql/v1beta1/namespaces/default/sqlscripts"   -H "Content-Type: application/json"   -d '{"script":"INSERT INTO alerts 
+SELECT
     CONCAT('\''probe-strike-'\'', cardId, '\''-'\'', strike_tx_id) AS alertId,
     cardId,
     country,
@@ -336,12 +335,12 @@ curl -X POST "localhost:8080/sql/v1beta1/namespaces/default/sqlscripts" \
     '\''PROBE_STRIKE'\''                               AS rule,
     LEAST(0.99, 0.60 + (probe_count * 0.08))        AS score,
     CONCAT(
-        '\''{"probe_count":'\'', CAST(probe_count AS STRING),
-        '\'',"first_probe_tx":"'\'', first_probe_tx_id,
-        '\''","strike_amount":'\'', CAST(strike_amount AS STRING),
-        '\'',"pattern_duration_sec":'\'', CAST(pattern_duration_sec AS STRING),
-        '\'',"country":"'\'', country,
-        '\''"}'\''
+        '\''{\"probe_count\":'\'', CAST(probe_count AS STRING),
+        '\'',\"first_probe_tx\":\"'\'', first_probe_tx_id,
+        '\''\",\"strike_amount\":'\'', CAST(strike_amount AS STRING),
+        '\'',\"pattern_duration_sec\":'\'', CAST(pattern_duration_sec AS STRING),
+        '\'',\"country\":\"'\'', country,
+        '\''\"}'\''
     ) AS details,
     CAST(strike_ts AS TIMESTAMP(3) WITH LOCAL TIME ZONE) AS alertTime,
     CAST(EXTRACT(EPOCH FROM PROCTIME()) * 1000 AS BIGINT) + EXTRACT(MILLISECOND FROM PROCTIME()) - 
