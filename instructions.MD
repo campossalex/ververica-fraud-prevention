@@ -17,8 +17,19 @@ Additionally, you have access to two command line interfaces to run some command
 > [!NOTE]
 > Please skip the license message you will see in the different components. This lab environment is for training purposes, so licenses are not required.
 
-Lab 1: Connecting with Data Sources
+Steps
 ===
-In this first lab, you will learn how to create Dynamic Table to consume data from a Kafka topic and from a CSV file stored in Minio (s3).
 
-To go Ververica Web console, then SQL -> SQL scripts. Run in order the Scripts you will find the left-hand side of the SQL Editor. 
+To go Ververica Web console, then SQL -> SQL scripts. Run in order the Scripts you will find the left-hand side of the SQL Editor.  
+
+Steps description:  
+
+1. Create the Dynamic Tables to connect to the Kafka cluster. Two tables are created: transactions and alerts.  
+2. Query the transaction table (Kafka topic) to print some records.  
+3. Create VIEWS to group events by rules.  
+4. Create the Rule to detect Impossible Travels (transactions in two different countries in less than 10 minutes).  
+5. Create the Rule to detect Velocity patterns (transactions_count >= 5 OR amount_sum >= 1200).  
+6. Create the Rule to detect Highe Value ( transaction amount >= 5000).  
+7. Query the alert table (Kafka topic) to print some records.  
+8. Create a new Catalog to connect to the Postgres database.  
+8. Create a job to sink the alerts from the Kafka topic to the Postgres table.  
