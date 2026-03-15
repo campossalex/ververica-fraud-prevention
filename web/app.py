@@ -652,7 +652,8 @@ def home():
 def start_salesgen():
     import subprocess
     cmd = (
-        "screen -dmS salesgen bash -c "
+        "if ! screen -list | grep -q \"transactiongen\"; then"
+        "screen -dmS transactiongen bash -c "
         "'cd /root/ververica-platform-playground/transactiongen/; "
         "python3 transactions.py "
         "--bootstrap kubernetes-vm:9092 "
@@ -662,6 +663,7 @@ def start_salesgen():
         "--impossible-travel-rate 0.02 "
         "--high-amount-rate 0.04 "
         "--burst-rate 0.04'"
+        "fi"
     )
     try:
         result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
