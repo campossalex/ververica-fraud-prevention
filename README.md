@@ -25,3 +25,7 @@ yum install -y git
 git clone https://github.com/campossalex/ververica-fraud-prevention ververica-platform-playground  
 ./ververica-platform-playground/manual_setup.sh
 ```
+
+# Terraform Setup
+
+Run the steps describe here: https://github.com/campossalex/ververica-fraud-prevention/tree/master/terraform
