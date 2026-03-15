@@ -653,7 +653,7 @@ def start_salesgen():
     import subprocess
     cmd = (
         "screen -dmS salesgen bash -c "
-        "'cd ververica-platform-playground/transactiongen/; "
+        "'cd /root/ververica-platform-playground/transactiongen/; "
         "python3 transactions.py "
         "--bootstrap kubernetes-vm:9092 "
         "--topic transactions "
