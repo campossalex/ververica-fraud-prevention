@@ -188,7 +188,6 @@ main() {
   curl -i -X POST localhost:8080/api/v1/namespaces/default/sessionclusters -H "Content-Type: application/yaml" --data-binary "@/root/ververica-platform-playground/vvp-resources/sessioncluster.yaml"
   curl -i -X POST 'localhost:8080/namespaces/v1/namespaces/default:setPreviewSessionCluster' -H 'accept: application/json' -H 'Content-Type: application/json' -d '{"previewSessionClusterName": "sql-editor"}'
 
-
 curl -X POST "localhost:8080/sql/v1beta1/namespaces/default/sqlscripts" \
   -H "Content-Type: application/json" \
   -d '{"script":"CREATE TABLE `transactions` (
@@ -230,8 +229,12 @@ CREATE TABLE `alerts` (
   '\''properties.group.id'\'' = '\''flink-fraud-alert'\'',
   '\''scan.startup.mode'\'' = '\''earliest-offset'\'',
   '\''topic'\'' = '\''alerts'\''
-);","displayName":"Kafka Table DDL","name":"namespaces/default/sqlscripts/kafka-table-ddl"}'
+);","displayName":"1. Kafka Table DDL","name":"namespaces/default/sqlscripts/kafka-table-ddl"}'
 
+curl -X POST "localhost:8080/sql/v1beta1/namespaces/default/sqlscripts" \
+  -H "Content-Type: application/json" \
+  -d '{"script":"SELECT * FROM `transactions` (
+);","displayName":"2. Query transaction table","name":"namespaces/default/sqlscripts/kafka-table-ddl"}'
 
 curl -X POST "localhost:8080/sql/v1beta1/namespaces/default/sqlscripts" \
   -H "Content-Type: application/json" \
@@ -251,8 +254,7 @@ ONE ROW PER MATCH
 AFTER MATCH SKIP TO LAST `B`
 PATTERN (`A` `B`)
 DEFINE `B` AS `B`.`country` <> `A`.`country` AND `B`.`event_ts` <= `A`.`event_ts` + INTERVAL '\''10'\'' MINUTE);
-","displayName":"Views DDL","name":"namespaces/default/sqlscripts/view-ddl"}'
-
+","displayName":"3. Views DDL","name":"namespaces/default/sqlscripts/view-ddl"}'
 
 curl -X POST "localhost:8080/sql/v1beta1/namespaces/default/sqlscripts" \
   -H "Content-Type: application/json" \
@@ -273,7 +275,7 @@ SELECT
   ) AS details,
   ts2 AS alertTime
 FROM travel_matches;
-","displayName":"Impossible Travel Rule","name":"namespaces/default/sqlscripts/impossible-travel-rule"}'
+","displayName":"4. Create Impossible Travel Rule","name":"namespaces/default/sqlscripts/impossible-travel-rule"}'
 
 curl -X POST "localhost:8080/sql/v1beta1/namespaces/default/sqlscripts" \
   -H "Content-Type: application/json" \
@@ -293,7 +295,7 @@ SELECT
   window_end AS alertTime
 FROM card_5m
 WHERE tx_count >= 5 OR amount_sum >= 1200;
-","displayName":"Velocity Rule","name":"namespaces/default/sqlscripts/velocity-rule"}'
+","displayName":"5. Create Velocity Rule","name":"namespaces/default/sqlscripts/velocity-rule"}'
 
 curl -X POST "localhost:8080/sql/v1beta1/namespaces/default/sqlscripts" \
   -H "Content-Type: application/json" \
@@ -315,7 +317,13 @@ SELECT
   CAST(event_ts AS TIMESTAMP(3) WITH LOCAL TIME ZONE) AS alertTime
 FROM transactions 
 WHERE amount > 5000.00;
-","displayName":"High Value Rule","name":"namespaces/default/sqlscripts/high-value-rule"}'
+","displayName":"6. Create High Value Rule","name":"namespaces/default/sqlscripts/high-value-rule"}'
+
+curl -X POST "localhost:8080/sql/v1beta1/namespaces/default/sqlscripts" \
+  -H "Content-Type: application/json" \
+  -d '{"script":"SELECT * FROM `alerts` (
+);","displayName":"7. Query alert table","name":"namespaces/default/sqlscripts/kafka-table-ddl"}'
+
 
 curl -X POST "localhost:8080/sql/v1beta1/namespaces/default/sqlscripts" \
   -H "Content-Type: application/json" \
@@ -325,14 +333,13 @@ curl -X POST "localhost:8080/sql/v1beta1/namespaces/default/sqlscripts" \
   '\''default-database'\'' = '\''fraud'\'',
   '\''username'\'' = '\''root'\'',
   '\''password'\'' = '\''admin1'\''
-)","displayName":"Create Catalog","name":"namespaces/default/sqlscripts/create-catalog"}'
+)","displayName":"8. Create a Postgre Catalog","name":"namespaces/default/sqlscripts/create-catalog"}'
 
 curl -X POST "localhost:8080/sql/v1beta1/namespaces/default/sqlscripts" \
   -H "Content-Type: application/json" \
   -d '{"script":"INSERT INTO fraud.fraud.alerts 
 SELECT * FROM alerts",
-"displayName":"Alerts Sink","name":"namespaces/default/sqlscripts/alerts-sink"}'
-
+"displayName":"9. Sink Kafka Alerts to Postgres","name":"namespaces/default/sqlscripts/alerts-sink"}'
 
 }
 
