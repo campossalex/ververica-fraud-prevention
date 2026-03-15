@@ -234,11 +234,6 @@ CREATE TABLE `alerts` (
 
 curl -X POST "localhost:8080/sql/v1beta1/namespaces/default/sqlscripts" \
   -H "Content-Type: application/json" \
-  -d '{"script":"SELECT * FROM `transactions` (
-);","displayName":"2. Query transaction table","name":"namespaces/default/sqlscripts/select-transactions"}'
-
-curl -X POST "localhost:8080/sql/v1beta1/namespaces/default/sqlscripts" \
-  -H "Content-Type: application/json" \
   -d '{"script":"
 CREATE VIEW `card_5m`
 AS SELECT `cardId`, `country`, `window_start`, `window_end`, COUNT(*) AS `tx_count`, SUM(`amount`) AS `amount_sum`
@@ -255,7 +250,7 @@ ONE ROW PER MATCH
 AFTER MATCH SKIP TO LAST `B`
 PATTERN (`A` `B`)
 DEFINE `B` AS `B`.`country` <> `A`.`country` AND `B`.`event_ts` <= `A`.`event_ts` + INTERVAL '\''10'\'' MINUTE);
-","displayName":"3. Views DDL","name":"namespaces/default/sqlscripts/view-ddl"}'
+","displayName":"2. Views DDL","name":"namespaces/default/sqlscripts/view-ddl"}'
 
 curl -X POST "localhost:8080/sql/v1beta1/namespaces/default/sqlscripts" \
   -H "Content-Type: application/json" \
@@ -276,9 +271,9 @@ SELECT
   ) AS details,
   ts2 AS alertTime,
   CAST(EXTRACT(EPOCH FROM PROCTIME()) * 1000 AS BIGINT) + EXTRACT(MILLISECOND FROM PROCTIME()) - 
-(CAST(EXTRACT(EPOCH FROM ts2) * 1000 AS BIGINT) + EXTRACT(MILLISECOND FROM ts2)),
+(CAST(EXTRACT(EPOCH FROM ts2) * 1000 AS BIGINT) + EXTRACT(MILLISECOND FROM ts2)) 
 FROM travel_matches;
-","displayName":"4. Create Impossible Travel Rule","name":"namespaces/default/sqlscripts/impossible-travel-rule"}'
+","displayName":"mpossible Travel Rule","name":"namespaces/default/sqlscripts/impossible-travel-rule"}'
 
 curl -X POST "localhost:8080/sql/v1beta1/namespaces/default/sqlscripts" \
   -H "Content-Type: application/json" \
@@ -297,10 +292,10 @@ SELECT
          '\''\"}'\'') AS details,
   window_end AS alertTime,
   CAST(EXTRACT(EPOCH FROM PROCTIME()) * 1000 AS BIGINT) + EXTRACT(MILLISECOND FROM PROCTIME()) - 
-(CAST(EXTRACT(EPOCH FROM window_end) * 1000 AS BIGINT) + EXTRACT(MILLISECOND FROM window_end)),
+(CAST(EXTRACT(EPOCH FROM window_end) * 1000 AS BIGINT) + EXTRACT(MILLISECOND FROM window_end)) 
 FROM card_5m
 WHERE tx_count >= 5 OR amount_sum >= 1200;
-","displayName":"5. Create Velocity Rule","name":"namespaces/default/sqlscripts/velocity-rule"}'
+","displayName":"Velocity Rule","name":"namespaces/default/sqlscripts/velocity-rule"}'
 
 curl -X POST "localhost:8080/sql/v1beta1/namespaces/default/sqlscripts" \
   -H "Content-Type: application/json" \
@@ -321,10 +316,10 @@ SELECT
   ) AS details,
   CAST(event_ts AS TIMESTAMP(3) WITH LOCAL TIME ZONE) AS alertTime,
   CAST(EXTRACT(EPOCH FROM PROCTIME()) * 1000 AS BIGINT) + EXTRACT(MILLISECOND FROM PROCTIME()) - 
-(CAST(EXTRACT(EPOCH FROM event_ts) * 1000 AS BIGINT) + EXTRACT(MILLISECOND FROM event_ts)),
+(CAST(EXTRACT(EPOCH FROM event_ts) * 1000 AS BIGINT) + EXTRACT(MILLISECOND FROM event_ts)) 
 FROM transactions 
 WHERE amount > 5000.00;
-","displayName":"6. Create High Value Rule","name":"namespaces/default/sqlscripts/high-value-rule"}'
+","displayName":"High Value Rule","name":"namespaces/default/sqlscripts/high-value-rule"}'
 
 curl -X POST "localhost:8080/sql/v1beta1/namespaces/default/sqlscripts"   -H "Content-Type: application/json"   -d '{"script":"INSERT INTO alerts 
 SELECT
@@ -370,12 +365,7 @@ MATCH_RECOGNIZE (
         probe  AS probe.amount  < 10.00,
         strike AS strike.amount > 300.00
 );
-","displayName":"7. Create Probe/Strike Rule","name":"namespaces/default/sqlscripts/probe-strike-rule"}'
-
-curl -X POST "localhost:8080/sql/v1beta1/namespaces/default/sqlscripts" \
-  -H "Content-Type: application/json" \
-  -d '{"script":"SELECT * FROM `alerts` (
-);","displayName":"8. Query alert table","name":"namespaces/default/sqlscripts/select-alerts"}'
+","displayName":"Probe/Strike Rule","name":"namespaces/default/sqlscripts/probe-strike-rule"}'
 
 curl -X POST "localhost:8080/sql/v1beta1/namespaces/default/sqlscripts" \
   -H "Content-Type: application/json" \
@@ -385,13 +375,13 @@ curl -X POST "localhost:8080/sql/v1beta1/namespaces/default/sqlscripts" \
   '\''default-database'\'' = '\''fraud'\'',
   '\''username'\'' = '\''root'\'',
   '\''password'\'' = '\''admin1'\''
-)","displayName":"9. Create a Postgre Catalog","name":"namespaces/default/sqlscripts/create-catalog"}'
+)","displayName":"3. Create a Postgre Catalog","name":"namespaces/default/sqlscripts/create-catalog"}'
 
 curl -X POST "localhost:8080/sql/v1beta1/namespaces/default/sqlscripts" \
   -H "Content-Type: application/json" \
   -d '{"script":"INSERT INTO fraud.fraud.alerts 
 SELECT * FROM alerts",
-"displayName":"10. Sink Kafka Alerts to Postgres","name":"namespaces/default/sqlscripts/alerts-sink"}'
+"displayName":"Sink Kafka Alerts to Postgres","name":"namespaces/default/sqlscripts/alerts-sink"}'
 
 }
 
