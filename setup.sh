@@ -221,7 +221,8 @@ CREATE TABLE `alerts` (
   `rule` STRING,
   `score` DOUBLE,
   `details` STRING,
-  `alertTime` TIMESTAMP(3) WITH LOCAL TIME ZONE
+  `alertTime` TIMESTAMP(3) WITH LOCAL TIME ZONE,
+  `processing_lag` INT
 ) WITH (
   '\''connector'\'' = '\''kafka'\'',
   '\''format'\'' = '\''json'\'',
@@ -273,7 +274,9 @@ SELECT
     '\''\",\"delta_minutes\":'\'', CAST(TIMESTAMPDIFF(MINUTE, ts1, ts2) AS STRING),
     '\''}'\''
   ) AS details,
-  ts2 AS alertTime
+  ts2 AS alertTime,
+  CAST(EXTRACT(EPOCH FROM PROCTIME()) * 1000 AS BIGINT) + EXTRACT(MILLISECOND FROM PROCTIME()) - 
+(CAST(EXTRACT(EPOCH FROM ts2) * 1000 AS BIGINT) + EXTRACT(MILLISECOND FROM ts2)),
 FROM travel_matches;
 ","displayName":"4. Create Impossible Travel Rule","name":"namespaces/default/sqlscripts/impossible-travel-rule"}'
 
@@ -292,7 +295,9 @@ SELECT
          '\'',\"start\":\"'\'', CAST(window_start AS STRING),
          '\''\",\"end\":\"'\'', CAST(window_end AS STRING),
          '\''\"}'\'') AS details,
-  window_end AS alertTime
+  window_end AS alertTime,
+  CAST(EXTRACT(EPOCH FROM PROCTIME()) * 1000 AS BIGINT) + EXTRACT(MILLISECOND FROM PROCTIME()) - 
+(CAST(EXTRACT(EPOCH FROM window_end) * 1000 AS BIGINT) + EXTRACT(MILLISECOND FROM window_end)),
 FROM card_5m
 WHERE tx_count >= 5 OR amount_sum >= 1200;
 ","displayName":"5. Create Velocity Rule","name":"namespaces/default/sqlscripts/velocity-rule"}'
@@ -314,16 +319,64 @@ SELECT
     '\''\",\"country\":\"'\'', country,
     '\''\"}'\''
   ) AS details,
-  CAST(event_ts AS TIMESTAMP(3) WITH LOCAL TIME ZONE) AS alertTime
+  CAST(event_ts AS TIMESTAMP(3) WITH LOCAL TIME ZONE) AS alertTime,
+  CAST(EXTRACT(EPOCH FROM PROCTIME()) * 1000 AS BIGINT) + EXTRACT(MILLISECOND FROM PROCTIME()) - 
+(CAST(EXTRACT(EPOCH FROM event_ts) * 1000 AS BIGINT) + EXTRACT(MILLISECOND FROM event_ts)),
 FROM transactions 
 WHERE amount > 5000.00;
 ","displayName":"6. Create High Value Rule","name":"namespaces/default/sqlscripts/high-value-rule"}'
 
 curl -X POST "localhost:8080/sql/v1beta1/namespaces/default/sqlscripts" \
   -H "Content-Type: application/json" \
-  -d '{"script":"SELECT * FROM `alerts` (
-);","displayName":"7. Query alert table","name":"namespaces/default/sqlscripts/select-alerts"}'
+  -d '{"script":"SELECT
+    CONCAT('\''probe-strike-'\'', cardId, '\''-'\'', strike_tx_id) AS alertId,
+    cardId,
+    country,
+    strike_tx_id                                    AS transaction_id,
+    '\''PROBE_STRIKE'\''                               AS rule,
+    LEAST(0.99, 0.60 + (probe_count * 0.08))        AS score,
+    CONCAT(
+        '\''{"probe_count":'\'', CAST(probe_count AS STRING),
+        '\'',"first_probe_tx":"'\'', first_probe_tx_id,
+        '\''","strike_amount":'\'', CAST(strike_amount AS STRING),
+        '\'',"pattern_duration_sec":'\'', CAST(pattern_duration_sec AS STRING),
+        '\'',"country":"'\'', country,
+        '\''"}'\''
+    ) AS details,
+    CAST(strike_ts AS TIMESTAMP(3) WITH LOCAL TIME ZONE) AS alertTime,
+    CAST(EXTRACT(EPOCH FROM PROCTIME()) * 1000 AS BIGINT) + EXTRACT(MILLISECOND FROM PROCTIME()) - 
+(CAST(EXTRACT(EPOCH FROM strike_ts) * 1000 AS BIGINT) + EXTRACT(MILLISECOND FROM strike_ts))
+FROM transactions
+MATCH_RECOGNIZE (
+    PARTITION BY cardId
+    ORDER BY event_ts
+    MEASURES
+        strike.txId AS strike_tx_id,
+        strike.amount AS strike_amount,
+        strike.event_ts AS strike_ts,
+        strike.country AS country,
+        -- Summary of the probe sequence
+        FIRST(probe.txId) AS first_probe_tx_id,
+        COUNT(probe.txId) AS probe_count,
+        TIMESTAMPDIFF(
+            SECOND,
+            FIRST(probe.event_ts),
+            strike.event_ts
+        ) AS pattern_duration_sec
+ 
+    ONE ROW PER MATCH
+    AFTER MATCH SKIP PAST LAST ROW
+    PATTERN (probe{2,5} strike) WITHIN INTERVAL '\''10'\'' MINUTE
+    DEFINE
+        probe  AS probe.amount  < 10.00,
+        strike AS strike.amount > 300.00
+);
+","displayName":"7. Create Probe/Strike Rule","name":"namespaces/default/sqlscripts/probe-strike-rule"}'
 
+curl -X POST "localhost:8080/sql/v1beta1/namespaces/default/sqlscripts" \
+  -H "Content-Type: application/json" \
+  -d '{"script":"SELECT * FROM `alerts` (
+);","displayName":"8. Query alert table","name":"namespaces/default/sqlscripts/select-alerts"}'
 
 curl -X POST "localhost:8080/sql/v1beta1/namespaces/default/sqlscripts" \
   -H "Content-Type: application/json" \
@@ -333,13 +386,13 @@ curl -X POST "localhost:8080/sql/v1beta1/namespaces/default/sqlscripts" \
   '\''default-database'\'' = '\''fraud'\'',
   '\''username'\'' = '\''root'\'',
   '\''password'\'' = '\''admin1'\''
-)","displayName":"8. Create a Postgre Catalog","name":"namespaces/default/sqlscripts/create-catalog"}'
+)","displayName":"9. Create a Postgre Catalog","name":"namespaces/default/sqlscripts/create-catalog"}'
 
 curl -X POST "localhost:8080/sql/v1beta1/namespaces/default/sqlscripts" \
   -H "Content-Type: application/json" \
   -d '{"script":"INSERT INTO fraud.fraud.alerts 
 SELECT * FROM alerts",
-"displayName":"9. Sink Kafka Alerts to Postgres","name":"namespaces/default/sqlscripts/alerts-sink"}'
+"displayName":"10. Sink Kafka Alerts to Postgres","name":"namespaces/default/sqlscripts/alerts-sink"}'
 
 }
 
