@@ -18,11 +18,11 @@
 
 1. Close this repo  
 ```console
-git clone https://github.com/campossalex/apacheflink-labday-1 apacheflink-labday-1/
+git clone https://github.com/campossalex/ververica-fraud-prevention ververica-fraud-prevention/
 ``` 
 2. Change to the repo directory  
 ```console
-cd apacheflink-labday-1/terraform
+cd ververica-fraud-prevention/terraform
 ```
 3. Change to following configuration for your setup.   
 ```console
