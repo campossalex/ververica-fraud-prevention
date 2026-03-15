@@ -71,7 +71,7 @@ resource "aws_instance" "registration_form" {
   ami           = "ami-004e960cde33f9146"
   instance_type = "t2.micro"
   key_name      = var.key_name
-  vpc_security_group_ids = [aws_security_group.labday_sgn.id]
+  vpc_security_group_ids = [aws_security_group.fraud-prevention_sgn.id]
 
   root_block_device {
     volume_size = 20          # GB
@@ -106,7 +106,7 @@ resource "aws_instance" "labday" {
   ami           = var.instance_ami
   instance_type = var.instance_type
   key_name      = var.key_name
-  vpc_security_group_ids = [aws_security_group.labday_sgn.id]
+  vpc_security_group_ids = [aws_security_group.fraud-prevention_sgn.id]
 
   root_block_device {
     volume_size = 40          # GB
