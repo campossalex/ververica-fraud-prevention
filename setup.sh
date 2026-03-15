@@ -222,7 +222,7 @@ CREATE TABLE `alerts` (
   `score` DOUBLE,
   `details` STRING,
   `alertTime` TIMESTAMP(3),
-  `processing_lag` INT
+  `processing_lag` BIGINT
 ) WITH (
   '\''connector'\'' = '\''kafka'\'',
   '\''format'\'' = '\''json'\'',
