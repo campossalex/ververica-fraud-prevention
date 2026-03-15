@@ -529,7 +529,7 @@ def home():
                     <img class="logo" src="/assets/ververica-logo_navy.png" onerror="this.onerror=null;this.src='https://raw.githubusercontent.com/campossalex/apacheflink-labday-1/refs/heads/master/web/ververica-logo_navy.png';" alt="Ververica">
                     <h1>Apache Flink Lab Day</h1>
                     <p>Your hands-on environment is ready. Open the lab instructions to get started.</p>
-                    <a class="cta-btn" href="https://github.com/campossalex/apacheflink-labday-1/blob/master/instructions.MD" target="_blank">
+                    <a class="cta-btn" href="https://github.com/campossalex/ververica-fraud-prevention/blob/master/instructions.MD" target="_blank">
                         Lab Instructions
                         <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 10h10M11 6l4 4-4 4"/></svg>
                     </a>
