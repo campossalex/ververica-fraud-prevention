@@ -648,6 +648,147 @@ def home():
     return render_template_string(html, sites=sites, public_ip=public_ip)
 
 
+@app.route("/start-salesgen")
+def start_salesgen():
+    import subprocess
+    cmd = (
+        "screen -dmS salesgen bash -c "
+        "'cd ververica-platform-playground/transactiongen/; "
+        "python3 transactions.py "
+        "--bootstrap kubernetes-vm:9092 "
+        "--topic transactions "
+        "--rate 10000 "
+        "--cards 100000 "
+        "--impossible-travel-rate 0.02 "
+        "--high-amount-rate 0.04 "
+        "--burst-rate 0.04'"
+    )
+    try:
+        result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+        if result.returncode == 0:
+            status = "success"
+            message = "Transaction generator started successfully in a detached screen session (salesgen)."
+        else:
+            status = "error"
+            message = f"Command exited with code {result.returncode}. stderr: {result.stderr.strip() or 'none'}"
+    except Exception as e:
+        status = "error"
+        message = str(e)
+
+    html = f"""
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Start Transaction Generator &middot; Ververica</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+        <style>
+            :root {{
+                --bg-deep: #0a0624;
+                --teal: #05b89c;
+                --teal-glow: rgba(5,184,156,0.25);
+                --purple: #4e21e8;
+                --purple-light: #7c5cf5;
+                --text: #ffffff;
+                --text-muted: rgba(255,255,255,0.55);
+                --border: rgba(255,255,255,0.07);
+                --radius: 14px;
+                --mono: 'JetBrains Mono', monospace;
+            }}
+            *, *::before, *::after {{ margin: 0; padding: 0; box-sizing: border-box; }}
+            body {{
+                font-family: 'Manrope', system-ui, sans-serif;
+                background: var(--bg-deep);
+                color: var(--text);
+                min-height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 24px;
+            }}
+            .dot-grid {{
+                position: fixed; inset: 0; z-index: 0; pointer-events: none;
+                background-image: radial-gradient(rgba(255,255,255,0.04) 1px, transparent 1px);
+                background-size: 32px 32px;
+                mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, black 20%, transparent 100%);
+                -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, black 20%, transparent 100%);
+            }}
+            .card {{
+                position: relative; z-index: 1;
+                background: rgba(255,255,255,0.04);
+                border: 1px solid var(--border);
+                border-radius: 20px;
+                padding: 48px 40px;
+                max-width: 520px;
+                width: 100%;
+                text-align: center;
+                animation: fadeUp 0.6s cubic-bezier(0.22,1,0.36,1) forwards;
+            }}
+            @keyframes fadeUp {{
+                from {{ opacity: 0; transform: translateY(20px); }}
+                to   {{ opacity: 1; transform: translateY(0); }}
+            }}
+            .icon {{
+                width: 64px; height: 64px;
+                border-radius: 18px;
+                display: flex; align-items: center; justify-content: center;
+                margin: 0 auto 24px;
+            }}
+            .icon.success {{ background: linear-gradient(135deg, #05b89c, #21d4b5); }}
+            .icon.error   {{ background: linear-gradient(135deg, #e2243b, #ff5c6c); }}
+            .icon svg {{ width: 32px; height: 32px; }}
+            h1 {{ font-size: 1.5rem; font-weight: 800; margin-bottom: 12px; }}
+            p {{ color: var(--text-muted); line-height: 1.65; font-size: 0.95rem; margin-bottom: 24px; }}
+            .cmd-box {{
+                background: rgba(255,255,255,0.05);
+                border: 1px solid rgba(255,255,255,0.08);
+                border-radius: 10px;
+                padding: 14px 18px;
+                font-family: var(--mono);
+                font-size: 0.75rem;
+                color: var(--teal);
+                text-align: left;
+                word-break: break-all;
+                line-height: 1.6;
+                margin-bottom: 32px;
+            }}
+            .back-btn {{
+                display: inline-flex; align-items: center; gap: 8px;
+                padding: 12px 28px;
+                background: linear-gradient(135deg, var(--purple), var(--purple-light));
+                color: #fff;
+                font-family: 'Manrope', sans-serif;
+                font-size: 0.9rem; font-weight: 700;
+                text-decoration: none;
+                border-radius: 10px;
+                transition: transform 0.25s ease, box-shadow 0.25s ease;
+                box-shadow: 0 4px 24px rgba(78,33,232,0.3);
+            }}
+            .back-btn:hover {{ transform: translateY(-2px); box-shadow: 0 8px 36px rgba(78,33,232,0.45); }}
+        </style>
+    </head>
+    <body>
+        <div class="dot-grid"></div>
+        <div class="card">
+            <div class="icon {status}">
+                {'<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="5 12 10 17 20 7"/></svg>' if status == 'success' else '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>'}
+            </div>
+            <h1>{'Generator Started' if status == 'success' else 'Failed to Start'}</h1>
+            <p>{message}</p>
+            <div class="cmd-box">screen -dmS salesgen bash -c 'cd ververica-platform-playground/transactiongen/; python3 transactions.py --bootstrap kubernetes-vm:9092 --topic transactions --rate 10000 --cards 100000 --impossible-travel-rate 0.02 --high-amount-rate 0.04 --burst-rate 0.04'</div>
+            <a class="back-btn" href="/">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 4L6 8l4 4"/></svg>
+                Back to Dashboard
+            </a>
+        </div>
+    </body>
+    </html>
+    """
+    return html
+
+
 if __name__ == "__main__":
     print(f"Starting Flask app with arg_value = {public_ip}")
     app.run(host="0.0.0.0", port=80, debug=True)
