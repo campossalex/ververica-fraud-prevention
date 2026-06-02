@@ -273,7 +273,7 @@ SELECT
   CAST(EXTRACT(EPOCH FROM PROCTIME()) * 1000 AS BIGINT) + EXTRACT(MILLISECOND FROM PROCTIME()) - 
 (CAST(EXTRACT(EPOCH FROM ts2) * 1000 AS BIGINT) + EXTRACT(MILLISECOND FROM ts2)) 
 FROM travel_matches;
-","displayName":"mpossible Travel Rule","name":"namespaces/default/sqlscripts/impossible-travel-rule"}'
+","displayName":"Impossible Travel Rule","name":"namespaces/default/sqlscripts/impossible-travel-rule"}'
 
 curl -X POST "localhost:8080/sql/v1beta1/namespaces/default/sqlscripts" \
   -H "Content-Type: application/json" \
