@@ -42,7 +42,7 @@ sudo cp -Rv /values-license.yaml /root/ververica-platform-playground/setup/helm/
 echo "127.0.0.1 kubernetes-vm" >> /etc/hosts
 
 # start minikube
-sudo minikube start --memory=24G --cpus=12 --force
+sudo minikube start --memory=60G --cpus=26 --force
 
 # Wait for the Kubernetes API server to become available
 kubectl --namespace kube-system wait --timeout=5m --for=condition=ready pods --all
